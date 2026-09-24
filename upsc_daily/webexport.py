@@ -209,10 +209,26 @@ def build(store: Store, out_dir: Path, days: list[str] | None = None,
         if src.exists():
             shutil.copyfile(src, out_dir / name)
 
+    # A paper deleted from the database must not linger on the published site.
+    keep = {d["date"] for d in index_days}
+    for stale in data_dir.glob("*.json"):
+        if stale.stem not in keep and stale.name not in ("index.json", "style.json"):
+            stale.unlink()
+    for stale in papers_dir.glob("*.html"):
+        if stale.stem not in keep:
+            stale.unlink()
+
     # A no-JavaScript entry point, and what the 404 page and <noscript> link to.
     if index_days:
-        latest = index_days[0]["date"]
-        shutil.copyfile(papers_dir / f"{latest}.html", out_dir / "latest.html")
+        shutil.copyfile(papers_dir / f"{index_days[0]['date']}.html", out_dir / "latest.html")
+    else:
+        (out_dir / "latest.html").write_text(
+            "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
+            "<title>UPSC Daily</title></head><body style=\"font-family:system-ui;"
+            "max-width:38rem;margin:14vh auto;padding:0 1.5rem\">"
+            "<h1>No paper yet</h1><p>The first day's questions have not been published. "
+            "<a href=\"./\">Back to UPSC Daily</a></p></body></html>",
+            encoding="utf-8")
 
     return {"days": len(index_days), "out": str(out_dir), **totals}
 

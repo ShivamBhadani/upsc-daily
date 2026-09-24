@@ -253,7 +253,7 @@ class StatBar(QWidget):
     """A labelled horizontal accuracy bar."""
 
     def __init__(self, label: str, done: int, total: int, color: str,
-                 parent: QWidget | None = None) -> None:
+                 parent: QWidget | None = None, caption: str | None = None) -> None:
         super().__init__(parent)
         pct = int(done / total * 100) if total else 0
         lay = QVBoxLayout(self)
@@ -264,7 +264,7 @@ class StatBar(QWidget):
         name.setStyleSheet("font-weight:600;")
         row.addWidget(name)
         row.addStretch(1)
-        row.addWidget(muted(f"{done}/{total}  ·  {pct}%"))
+        row.addWidget(muted(caption or f"{done}/{total}  ·  {pct}%"))
         lay.addLayout(row)
 
         track = QFrame()

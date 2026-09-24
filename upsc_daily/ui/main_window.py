@@ -451,7 +451,8 @@ class MainWindow(QMainWindow):
         wt.setObjectName("CardTitle")
         weights.box.addWidget(wt)
         for s, w in pyq.SUBJECT_WEIGHTS.items():
-            weights.box.addWidget(StatBar(s, w, 20, theme.subject_color(s)))
+            weights.box.addWidget(StatBar(s, w, 100, theme.subject_color(s),
+                                          caption=f"{w}% of the paper"))
         lay.addWidget(weights)
 
         trends = Card()

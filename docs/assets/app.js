@@ -72,10 +72,10 @@
     return parseInt(p[2], 10) + ' ' + m + ' ' + p[0];
   }
 
-  function bar(label, done, total, color) {
+  function bar(label, done, total, color, caption) {
     var pct = total ? Math.round(done / total * 100) : 0;
     return '<div class="bar"><div class="bar-top"><b>' + esc(label) + '</b>' +
-      '<span class="muted">' + done + '/' + total + ' · ' + pct + '%</span></div>' +
+      '<span class="muted">' + esc(caption || (done + '/' + total + ' · ' + pct + '%')) + '</span></div>' +
       '<div class="track"><div class="fill" style="width:' + pct + '%;background:' +
       esc(color) + '"></div></div></div>';
   }
@@ -497,7 +497,8 @@
 
     html += '<div class="card"><h2>Subject weightage targeted per paper</h2>' +
       Object.keys(style.subjectWeights).map(function (s) {
-        return bar(s, style.subjectWeights[s], 20, subjectColor(s));
+        var w = style.subjectWeights[s];
+        return bar(s, w, 100, subjectColor(s), w + '% of the paper');
       }).join('') + '</div>';
 
     html += '<div class="card"><h2>Trends the setter follows</h2><ul class="stmts">' +
