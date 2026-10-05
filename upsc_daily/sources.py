@@ -85,6 +85,17 @@ def classify(text: str, fallback: str = "Mixed") -> str:
     return best if best_score else fallback
 
 
+def _is_web_url(url: str) -> bool:
+    """Accept only ordinary web links, and none carrying HTML metacharacters.
+
+    A feed is third-party input: the link ends up in an href in the published
+    paper, so a URL bearing quotes or angle brackets never enters the database.
+    """
+    if not url.lower().startswith(("http://", "https://")):
+        return False
+    return not any(c in url for c in "\"'<>` ")
+
+
 def _clean(html: str) -> str:
     if not html:
         return ""
@@ -116,7 +127,7 @@ def parse_feed(xml_text: str, feed_name: str, feed_subject: str, limit: int) -> 
     for item in items[:limit]:
         title = _clean(_first(item, "title", "atom:title"))
         url = _first(item, "link", "atom:link", "guid").strip()
-        if not title or not url.startswith("http"):
+        if not title or not _is_web_url(url):
             continue
         summary = _clean(
             _first(item, "description", "content:encoded", "atom:summary", "atom:content")
