@@ -61,7 +61,7 @@ def collect(settings: Settings, store: Store) -> int:
     return len(articles)
 
 
-def generate(settings: Settings, store: Store, day: str) -> int:
+def generate(settings: Settings, store: Store, day: str, allow_offline: bool = False) -> int:
     articles = store.articles_for(day)
     if not articles:
         say(f"no articles stored for {day}; nothing to set questions from")
@@ -72,13 +72,22 @@ def generate(settings: Settings, store: Store, day: str) -> int:
     except GenerationError as exc:
         say(f"generation failed: {exc}")
         return 0
+    if backend == "offline" and not allow_offline:
+        # Template drafts are fine to study from locally, but they are not good
+        # enough to put in front of strangers, so they are never published by
+        # accident — only when asked for by name.
+        say("the only reachable backend was the offline template engine, so nothing "
+            "was saved. Sign the `claude` CLI in (or set ANTHROPIC_API_KEY) and run "
+            "again, or pass --allow-offline to publish drafts anyway.")
+        return 0
+
     store.clear_day(day)
     store.save_questions(questions)
     store.save_mains(mains)
     say(f"{len(questions)} Prelims and {len(mains)} Mains questions set via {backend}")
     if backend == "offline":
-        say("WARNING: no model backend was reachable — these are template drafts. "
-            "Check them before publishing, or rerun once `claude` is available.")
+        say("WARNING: these are template drafts. They are badged as such on the site, "
+            "but check them against their sources before leaving them up.")
     return len(questions)
 
 
@@ -138,6 +147,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--backend", choices=["auto", "api", "cli", "offline"],
                     help="override the question-setting backend for this run")
     ap.add_argument("--prelims", type=int, help="number of Prelims questions (minimum 20)")
+    ap.add_argument("--allow-offline", action="store_true",
+                    help="publish template drafts when no model backend is reachable")
     args = ap.parse_args(argv)
 
     settings = Settings.load()
@@ -158,19 +169,22 @@ def main(argv: list[str] | None = None) -> int:
         collect(settings, store)
 
     existing = store.questions_for(day)
+    failed = False
     if args.no_generate:
         say("skipping generation")
     elif existing and not args.regenerate:
         say(f"{day} already has {len(existing)} questions — pass --regenerate to redo them")
-    else:
-        if not generate(settings, store, day):
-            say("no questions were produced; the site keeps its previous papers")
+    elif not generate(settings, store, day, allow_offline=args.allow_offline):
+        say("no questions were produced; the site keeps its previous papers")
+        failed = True
 
     build(args.out)
     if not args.no_push:
         n = len(store.questions_for(day))
         push(args.out, f"Paper for {day} ({n} Prelims questions)", args.branch)
-    return 0
+
+    # A scheduled run must not look successful when the day got no paper.
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":

@@ -66,6 +66,12 @@ Useful variations:
 | `python publish.py --regenerate` | set today's questions again, replacing them |
 | `python publish.py --date 2026-09-05 --no-fetch --regenerate` | redo one past day |
 | `python publish.py --prelims 30` | a longer paper |
+| `python publish.py --allow-offline` | publish template drafts when no model is reachable |
+
+If no model backend can be reached, the publisher sets **nothing** and exits with a
+non-zero status rather than putting template drafts on a public site — so a scheduled
+run shows up as failed instead of quietly publishing weak questions. Pass
+`--allow-offline` if you do want the drafts; they stay badged as drafts on the site.
 
 The desktop app's **Publish site** button does the build step alone, so you can look
 the paper over in the app first and then push with `python publish.py --no-fetch
