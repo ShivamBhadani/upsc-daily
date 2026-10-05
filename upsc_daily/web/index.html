@@ -28,7 +28,8 @@
 
   <main class="main">
     <header class="topbar">
-      <button class="btn ghost burger" id="burger" type="button" aria-label="Menu">☰</button>
+      <button class="btn ghost burger" id="burger" type="button"
+              aria-label="Menu" aria-expanded="false" aria-controls="nav">☰</button>
       <div>
         <h1 id="page-title">UPSC Daily</h1>
         <div class="sub" id="page-sub"></div>
@@ -37,6 +38,8 @@
       <span id="date-picker" class="no-print"></span>
       <button class="btn ghost no-print" id="theme-btn" type="button" aria-label="Switch theme">◐</button>
     </header>
+
+    <p class="sr-only" id="announcer" role="status" aria-live="polite"></p>
 
     <div class="page" id="view">
       <p class="spinner">Loading today's paper…</p>

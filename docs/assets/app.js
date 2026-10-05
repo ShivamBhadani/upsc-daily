@@ -10,16 +10,18 @@
   var LETTERS = ['a', 'b', 'c', 'd'];
   var STORE_KEY = 'upscdaily.v1';
 
+  // Each theme defines its own value for these, because a colour readable on the
+  // dark surface is not readable on white.
   var SUBJECT_COLOR = {
-    'Polity & Governance': '#5b9bd5',
-    'Economy': '#46b07f',
-    'Environment & Ecology': '#5fbf9b',
-    'Science & Technology': '#a97fd6',
-    'History, Art & Culture': '#d9a441',
-    'Geography': '#d98b5b',
-    'International Relations': '#d96a9b',
-    'Social Issues & Schemes': '#7fb0d6',
-    'Mixed': '#8f97a8'
+    'Polity & Governance': 'var(--subj-polity)',
+    'Economy': 'var(--subj-economy)',
+    'Environment & Ecology': 'var(--subj-environment)',
+    'Science & Technology': 'var(--subj-scitech)',
+    'History, Art & Culture': 'var(--subj-history)',
+    'Geography': 'var(--subj-geography)',
+    'International Relations': 'var(--subj-ir)',
+    'Social Issues & Schemes': 'var(--subj-social)',
+    'Mixed': 'var(--subj-mixed)'
   };
 
   var NAV = [
@@ -44,13 +46,21 @@
 
   function el(id) { return document.getElementById(id); }
 
+  // A screen reader is told what changed; sighted users see it instead.
+  function announce(message) {
+    var box = el('announcer');
+    if (!box) return;
+    box.textContent = '';
+    setTimeout(function () { box.textContent = message; }, 60);
+  }
+
   function esc(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
-  function subjectColor(s) { return SUBJECT_COLOR[s] || 'var(--muted)'; }
+  function subjectColor(s) { return SUBJECT_COLOR[s] || 'var(--subj-mixed)'; }
 
   // Source URLs come from a model reading news pages, so only ordinary web links
   // are ever put in an href — a javascript: or data: URL would run on click.
@@ -202,7 +212,7 @@
     var head = '<div class="q-head"><span class="q-num">Q' + q.n + '</span>' +
       chip(q.subject, subjectColor(q.subject)) +
       chip(q.difficulty, 'var(--muted)') +
-      chip(q.qtypeName, 'var(--accent-dim)') +
+      chip(q.qtypeName, 'var(--chip-accent)') +
       (q.origin === 'offline' ? chip('offline draft', 'var(--red)') : '') +
       '</div>';
 
@@ -223,8 +233,10 @@
       var cls = 'opt';
       if (answered && i === q.answer) cls += ' right';
       else if (answered && chosen === i) cls += ' wrong';
+      // aria-disabled, not disabled: a disabled button cannot hold focus, and the
+      // reader would be thrown back to the top of the document on every answer.
       return '<button class="' + cls + '" type="button" data-q="' + esc(q.id) + '" data-i="' + i + '"' +
-        (answered ? ' disabled' : '') + '><span class="key">' + LETTERS[i].toUpperCase() +
+        (answered ? ' aria-disabled="true"' : '') + '><span class="key">' + LETTERS[i].toUpperCase() +
         '</span><span>' + esc(o) + '</span></button>';
     }).join('') + '</div>';
 
@@ -283,7 +295,7 @@
     if (formats.length) {
       html += '<div class="card"><h2>Question formats used</h2><div class="row tight">' +
         formats.map(function (f) {
-          return chip(f + ' × ' + d.formatCounts[f], 'var(--accent-dim)');
+          return chip(f + ' × ' + d.formatCounts[f], 'var(--chip-accent)');
         }).join('') + '</div></div>';
     }
 
@@ -366,7 +378,7 @@
     return day.mains.map(function (m) {
       return '<article class="card"><div class="q-head"><span class="q-num">' + m.n + '</span>' +
         chip(m.gsPaper, 'var(--blue)') + chip(m.marks + ' marks', 'var(--muted)') +
-        chip(m.directive, 'var(--accent-dim)') + '</div>' +
+        chip(m.directive, 'var(--chip-accent)') + '</div>' +
         '<p class="stem">' + esc(m.question) + '</p>' +
         (m.hints.length ? '<p class="muted">Cover these dimensions:</p><ul class="stmts">' +
           m.hints.map(function (h) { return '<li><span class="n">•</span> ' + esc(h) + '</li>'; }).join('') +
@@ -386,7 +398,8 @@
       return '<div class="card"><h2>Timed test — ' + esc(prettyDate(day.date)) + '</h2>' +
         '<p class="muted">' + day.questions.length + ' questions, UPSC marking: +2 for a correct ' +
         'answer, −0.66 for a wrong one, nothing for a skip. The clock starts when you do. ' +
-        'Keys A–D or 1–4 mark an option; Enter moves on.</p>' +
+        'Keys A–D or 1–4 mark an option; the answer stays on screen until you move ' +
+        'on with Enter or the Next button.</p>' +
         '<div class="row"><button class="btn primary" id="quiz-start" type="button">Start test</button>' +
         '<a class="btn ghost" href="#/paper/' + day.date + '">Read it untimed instead</a></div></div>';
     }
@@ -487,7 +500,7 @@
 
     html += style.formats.map(function (f) {
       return '<article class="card"><div class="row tight"><h3 style="margin:0">' + esc(f.name) +
-        '</h3>' + chip(f.share + '% of paper', 'var(--accent)') + '</div>' +
+        '</h3>' + chip(f.share + '% of paper', 'var(--chip-accent)') + '</div>' +
         '<p>' + esc(f.blueprint) + '</p>' +
         '<p class="muted"><i>' + esc(f.exemplar) + '</i></p>' +
         (f.options.length ? '<div class="row tight">' + f.options.map(function (o) {
@@ -658,7 +671,7 @@
     progress: 'My progress', about: 'About'
   };
 
-  function render() {
+  function render(inPlace) {
     var route = parseHash();
     var view = TITLES[route.view] ? route.view : 'today';
     var date = route.date || (index ? index.latest : null);
@@ -667,31 +680,35 @@
     if (view === 'style') {
       setChrome(view, null, TITLES[view], 'The pattern model every question is set against');
       body.innerHTML = viewStyle();
-      return;
+      landed(TITLES[view], 'The pattern model every question is set against');
+      return Promise.resolve();
     }
     if (view === 'progress') {
       setChrome(view, null, TITLES[view], 'Kept in this browser, never uploaded');
       body.innerHTML = viewProgress();
-      return;
+      landed(TITLES[view], 'Kept in this browser, never uploaded');
+      return Promise.resolve();
     }
     if (view === 'archive') {
       setChrome(view, null, TITLES[view], 'Every paper published so far');
       body.innerHTML = viewArchive();
-      return;
+      landed(TITLES[view], 'Every paper published so far');
+      return Promise.resolve();
     }
     if (view === 'about') {
       setChrome(view, null, TITLES[view], 'What this is and how to use it');
       body.innerHTML = viewAbout();
-      return;
+      landed(TITLES[view], 'What this is and how to use it');
+      return Promise.resolve();
     }
 
     if (!date) {
       setChrome(view, null, TITLES[view], '');
       body.innerHTML = '<p class="empty">No paper has been published yet.</p>';
-      return;
+      return Promise.resolve();
     }
 
-    loadDay(date).then(function (day) {
+    return loadDay(date).then(function (day) {
       var subs = {
         today: prettyDate(day.date) + ' · everything at a glance',
         paper: day.counts.prelims + ' questions in UPSC Prelims format · ' + prettyDate(day.date),
@@ -705,13 +722,25 @@
       else if (view === 'news') body.innerHTML = viewNews(day);
       else if (view === 'mains') body.innerHTML = viewMains(day);
       else if (view === 'quiz') body.innerHTML = viewQuiz(day);
-      window.scrollTo(0, 0);
+      if (!inPlace) landed(TITLES[view], subs[view]);
     }).catch(function (err) {
       setChrome(view, date, TITLES[view], '');
       body.innerHTML = '<div class="card"><h2>That paper could not be loaded</h2>' +
         '<p class="muted">' + esc(err.message) + '</p>' +
         '<a class="btn" href="#/archive">Back to the archive</a></div>';
     });
+  }
+
+  // After a route change, put the reader at the top of the new page — by focus,
+  // not only by scroll position, so a keyboard or screen-reader user lands there too.
+  function landed(title, sub) {
+    window.scrollTo(0, 0);
+    var heading = el('page-title');
+    if (heading) {
+      heading.setAttribute('tabindex', '-1');
+      heading.focus({ preventScroll: true });
+    }
+    announce(title + (sub ? '. ' + sub : ''));
   }
 
   function loadDay(date) {
@@ -728,7 +757,7 @@
     var t = ev.target;
 
     var opt = t.closest ? t.closest('.opt') : null;
-    if (opt && !opt.disabled) {
+    if (opt && opt.getAttribute('aria-disabled') !== 'true') {
       var qid = opt.getAttribute('data-q');
       var chosen = parseInt(opt.getAttribute('data-i'), 10);
       var date = qid.split('#')[0];
@@ -736,24 +765,51 @@
         var q = day.questions.filter(function (x) { return x.id === qid; })[0];
         if (!q) return;
         recordAttempt(q, chosen);
+        var verdict = (chosen === q.answer ? 'Correct. ' : 'Incorrect. ') +
+          'Answer ' + LETTERS[q.answer].toUpperCase() + '. ' + q.explanation;
+
         if (quiz && !quiz.done && quiz.date === date) {
           if (chosen === q.answer) quiz.right += 1; else quiz.wrong += 1;
           quiz.revealed = true;
-          render();
-          setTimeout(function () {
-            if (quiz && !quiz.done) quizAdvance(day);
-          }, 1500);
+          // No auto-advance: it used to wipe the explanation after 1500 ms, which
+          // nobody reading at their own pace — or by ear — could keep up with.
+          render(true).then(function () {
+            announce(verdict + ' Press Enter for the next question.');
+            var panel = document.querySelector('.explain');
+            if (panel && panel.scrollIntoView) panel.scrollIntoView({ block: 'nearest' });
+            var next = el('quiz-next');
+            if (next) next.focus({ preventScroll: true });
+          });
         } else {
           var card = document.querySelector('[data-qid="' + qid.replace(/"/g, '') + '"]');
-          if (card) card.outerHTML = questionCard(q, 'practice');
+          if (card) {
+            card.outerHTML = questionCard(q, 'practice');
+            announce(verdict);
+            var again = document.querySelector('[data-qid="' + qid.replace(/"/g, '') +
+              '"] .opt[data-i="' + chosen + '"]');
+            if (again) again.focus();
+          }
         }
       });
       return;
     }
 
     if (t.id === 'theme-btn') { cycleTheme(); return; }
-    if (t.id === 'burger') { document.body.classList.toggle('nav-open'); return; }
-    if (t.id === 'scrim') { document.body.classList.remove('nav-open'); return; }
+    if (t.id === 'burger') {
+      var open = document.body.classList.toggle('nav-open');
+      t.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) {
+        var first = document.querySelector('.nav a');
+        if (first) first.focus();
+      }
+      return;
+    }
+    if (t.id === 'scrim') {
+      document.body.classList.remove('nav-open');
+      var b = el('burger');
+      if (b) b.setAttribute('aria-expanded', 'false');
+      return;
+    }
 
     if (t.id === 'reveal-all') {
       var route = parseHash();
@@ -827,7 +883,11 @@
     }
 
     var link = t.closest ? t.closest('a[href^="#/"]') : null;
-    if (link) document.body.classList.remove('nav-open');
+    if (link) {
+      document.body.classList.remove('nav-open');
+      var bb = el('burger');
+      if (bb) bb.setAttribute('aria-expanded', 'false');
+    }
   }
 
   function onKey(ev) {
@@ -839,10 +899,23 @@
     if (i < 0 && '1234'.indexOf(key) >= 0) i = parseInt(key, 10) - 1;
     if (i >= 0) {
       var btns = document.querySelectorAll('.card.q .opt');
-      if (btns.length === 4 && !btns[i].disabled) { btns[i].click(); ev.preventDefault(); }
+      if (btns.length === 4 && btns[i].getAttribute('aria-disabled') !== 'true') {
+        btns[i].click();
+        ev.preventDefault();
+      }
+      return;
+    }
+    if (key === 'escape') {
+      document.body.classList.remove('nav-open');
+      var burger = el('burger');
+      if (burger) { burger.setAttribute('aria-expanded', 'false'); burger.focus(); }
       return;
     }
     if (key === 'enter' || key === 'n') {
+      // Enter activates whatever has focus. Never take it from a control, or an
+      // answer option would be skipped instead of chosen.
+      if (key === 'enter' && ev.target.closest &&
+          ev.target.closest('button, a[href], summary, [role="button"], [contenteditable]')) return;
       var next = el('quiz-next');
       if (next) { next.click(); ev.preventDefault(); }
     }

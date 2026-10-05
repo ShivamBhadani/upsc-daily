@@ -19,6 +19,19 @@
   --shadow: 0 6px 24px rgba(0, 0, 0, 0.42);
   --radius: 14px;
   --sidebar: 236px;
+
+  /* Subject colours, chosen so chip text clears 4.5:1 against its own 10% tint
+     on a card. The light theme needs darker values; see the light blocks. */
+  --subj-polity: #5b9bd5;
+  --subj-economy: #46b07f;
+  --subj-environment: #5fbf9b;
+  --subj-scitech: #a97fd6;
+  --subj-history: #d9a441;
+  --subj-geography: #d98b5b;
+  --subj-ir: #d96a9b;
+  --subj-social: #7fb0d6;
+  --subj-mixed: #8f97a8;
+  --chip-accent: #ad8639;
 }
 
 :root[data-theme="light"] {
@@ -28,7 +41,7 @@
   --surface-3: #e5e3db;
   --border: #dcd9cf;
   --text: #1c1e24;
-  --muted: #6b7180;
+  --muted: #656a78;
   --accent: #9c6c12;
   --accent-ink: #fffaf0;
   --accent-dim: #c9a253;
@@ -36,6 +49,17 @@
   --green: #217a54;
   --red: #b23a41;
   --shadow: 0 4px 16px rgba(28, 30, 36, 0.10);
+
+  --subj-polity: #42709a;
+  --subj-economy: #307a58;
+  --subj-environment: #3a755f;
+  --subj-scitech: #7f5fa1;
+  --subj-history: #856428;
+  --subj-geography: #96603f;
+  --subj-ir: #a35074;
+  --subj-social: #517089;
+  --subj-mixed: #676d79;
+  --chip-accent: #806735;
 }
 
 @media (prefers-color-scheme: light) {
@@ -46,7 +70,7 @@
     --surface-3: #e5e3db;
     --border: #dcd9cf;
     --text: #1c1e24;
-    --muted: #6b7180;
+    --muted: #656a78;
     --accent: #9c6c12;
     --accent-ink: #fffaf0;
     --accent-dim: #c9a253;
@@ -54,6 +78,17 @@
     --green: #217a54;
     --red: #b23a41;
     --shadow: 0 4px 16px rgba(28, 30, 36, 0.10);
+
+    --subj-polity: #42709a;
+    --subj-economy: #307a58;
+    --subj-environment: #3a755f;
+    --subj-scitech: #7f5fa1;
+    --subj-history: #856428;
+    --subj-geography: #96603f;
+    --subj-ir: #a35074;
+    --subj-social: #517089;
+    --subj-mixed: #676d79;
+    --chip-accent: #806735;
   }
 }
 
@@ -166,7 +201,6 @@ a:hover { text-decoration: underline; }
   border-radius: 9px;
   border: 1px solid currentColor;
   background: color-mix(in srgb, currentColor 10%, transparent);
-  white-space: nowrap;
 }
 
 .btn {
@@ -204,6 +238,17 @@ select, input[type="search"] {
 }
 select:focus, input:focus { outline: 2px solid var(--accent-dim); outline-offset: 1px; }
 
+/* Keyboard users need to see where they are; the paper is answered with Tab. */
+.opt:focus-visible,
+.btn:focus-visible,
+.nav a:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 9px;
+}
+
 /* ------------------------------------------------------------- question -- */
 .q-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
 .q-num { color: var(--accent); font-weight: 800; font-size: 15px; }
@@ -213,7 +258,7 @@ select:focus, input:focus { outline: 2px solid var(--accent-dim); outline-offset
 .stmts li .n { color: var(--accent); font-weight: 700; display: inline-block; min-width: 20px; }
 .pairs { width: 100%; border-collapse: collapse; margin: 0 0 10px; }
 .pairs td { border: 1px solid var(--border); padding: 7px 11px; vertical-align: top; }
-.pairs td:first-child { font-weight: 600; white-space: nowrap; }
+.pairs td:first-child { font-weight: 600; }
 .closing { font-weight: 600; margin: 0 0 12px; }
 
 .opts { display: flex; flex-direction: column; gap: 8px; }
@@ -231,7 +276,7 @@ select:focus, input:focus { outline: 2px solid var(--accent-dim); outline-offset
   padding: 10px 13px;
   cursor: pointer;
 }
-.opt:hover:not([disabled]) { background: var(--surface-3); }
+.opt:hover:not([aria-disabled="true"]) { background: var(--surface-3); }
 .opt .key {
   flex: 0 0 auto;
   width: 22px;
@@ -248,7 +293,7 @@ select:focus, input:focus { outline: 2px solid var(--accent-dim); outline-offset
 .opt.right .key { border-color: var(--green); color: var(--green); }
 .opt.wrong { background: color-mix(in srgb, var(--red) 16%, transparent); border-color: var(--red); }
 .opt.wrong .key { border-color: var(--red); color: var(--red); }
-.opt[disabled] { cursor: default; }
+.opt[aria-disabled="true"] { cursor: default; }
 
 .explain {
   margin-top: 12px;
@@ -283,6 +328,19 @@ select:focus, input:focus { outline: 2px solid var(--accent-dim); outline-offset
 /* ------------------------------------------------------------- archive --- */
 .archive-day { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .archive-day .date { font-weight: 700; font-size: 15px; min-width: 116px; }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
 
 .empty { color: var(--muted); padding: 24px 0; }
 .spinner { color: var(--muted); padding: 40px 0; text-align: center; }
@@ -321,9 +379,36 @@ select:focus, input:focus { outline: 2px solid var(--accent-dim); outline-offset
 
 /* ---------------------------------------------------------------- print -- */
 @media print {
+  /* The dark theme is the default, so printing must repaint everything for
+     paper — options and chips were otherwise near-white on white. */
+  :root, :root[data-theme="dark"], :root[data-theme="light"] {
+    --bg: #fff;
+    --surface: #fff;
+    --surface-2: #fff;
+    --surface-3: #fff;
+    --border: #999;
+    --text: #000;
+    --muted: #333;
+    --accent: #000;
+    --accent-dim: #333;
+    --chip-accent: #333;
+    --blue: #000;
+    --green: #000;
+    --red: #000;
+  }
   .sidebar, .topbar, .no-print, .scrim { display: none !important; }
   body { background: #fff; color: #000; }
-  .card { break-inside: avoid; box-shadow: none; border-color: #bbb; }
+  .card, .opt, .explain, .chip {
+    background: #fff !important;
+    color: #000 !important;
+    border-color: #999 !important;
+  }
+  .opt .key { color: #000 !important; border-color: #000 !important; }
+  .opt.right { border-width: 2px; }
+  .opt.right::after { content: " (answer)"; font-weight: 700; }
+  .card { break-inside: avoid; box-shadow: none; }
   .explain { display: block !important; }
-  a { color: #000; }
+  .bar .fill { background: #555 !important; }
+  a { color: #000; text-decoration: underline; }
+  .src::after { content: " — " attr(href); font-size: 10px; word-break: break-all; }
 }
