@@ -19,6 +19,34 @@ LOGS = ROOT / "logs"
 KEEP_DAYS = 30
 
 
+def notify(title: str, message: str) -> None:
+    """Put a failure on screen.
+
+    A scheduled run that quietly stops publishing is worse than one that breaks
+    loudly: the site simply goes stale and nobody notices for days. Best effort
+    only — a desktop notification must never be able to fail the run.
+    """
+    # A lone apostrophe would end the PowerShell string and break the alert.
+    title = title.replace("'", "''")
+    message = message.replace("'", "''")
+    script = (
+        "[void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms');"
+        "$n = New-Object System.Windows.Forms.NotifyIcon;"
+        "$n.Icon = [System.Drawing.SystemIcons]::Warning;"
+        "$n.Visible = $true;"
+        f"$n.ShowBalloonTip(20000, '{title}', '{message}', "
+        "[System.Windows.Forms.ToolTipIcon]::Warning);"
+        "Start-Sleep -Seconds 12; $n.Dispose()"
+    )
+    try:
+        subprocess.Popen(
+            ["powershell", "-NoProfile", "-WindowStyle", "Hidden", "-Command", script],
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
+    except Exception:  # noqa: BLE001 - never let the alert break the run
+        pass
+
+
 def prune_old_logs() -> None:
     cutoff = date.today() - timedelta(days=KEEP_DAYS)
     for old in LOGS.glob("publish-*.log"):
@@ -56,6 +84,11 @@ def main(argv: list[str]) -> int:
         tail = log_path.read_text(encoding="utf-8", errors="replace").splitlines()[-15:]
         with (LOGS / "last-status.txt").open("a", encoding="utf-8") as f:
             f.write("\n".join(tail) + "\n")
+
+    if proc.returncode != 0:
+        notify("UPSC Daily: no paper published",
+               "The morning run failed. See logs/last-status.txt — the usual cause "
+               "is the claude CLI being signed out.")
 
     prune_old_logs()
     # Under pythonw (how the scheduled task runs it) there is no stdout at all.

@@ -91,14 +91,55 @@ environment and the publisher will use the API instead, without any other change
 
 ### Running it every morning by itself
 
-Windows Task Scheduler, one entry:
+A Task Scheduler entry named **UPSC Daily publish** runs the whole round at 07:00
+every day — collect, set, build, commit, push. It is already registered on this
+machine. It runs `tools/daily_run.py` through `pythonw.exe`, so no console window
+appears.
 
-* Program: `python`
-* Arguments: `publish.py`
-* Start in: this folder
-* Trigger: daily, 07:00
+What the task is set to do:
 
-The machine has to be on and signed in at that time; the paper goes up on its own.
+| Setting | Why |
+|---|---|
+| Start when available | If the laptop was off at 07:00, it runs as soon as it is on again |
+| Run only if network available | No point fetching feeds without one |
+| Battery restrictions off | A laptop is usually unplugged in the morning |
+| Restart on failure, 3 × 20 min | Rides out a flaky connection |
+| One hour time limit | A full run takes about 7 minutes |
+| Only while signed in | The `claude` CLI and the git credential both live in your user session |
+
+Run it by hand any time:
+
+```bash
+.\daily.cmd
+```
+
+Manage it:
+
+```powershell
+Get-ScheduledTaskInfo -TaskName "UPSC Daily publish"     # last run and result
+Start-ScheduledTask   -TaskName "UPSC Daily publish"     # run it now
+Disable-ScheduledTask -TaskName "UPSC Daily publish"     # pause it
+Unregister-ScheduledTask -TaskName "UPSC Daily publish"  # remove it
+```
+
+The definition is kept in `tools/upsc-daily-task.xml` if you ever need to recreate
+it, with `Register-ScheduledTask -TaskName "UPSC Daily publish" -Xml (Get-Content
+tools\upsc-daily-task.xml -Raw)`.
+
+### When a morning fails
+
+`logs/last-status.txt` holds one line — `OK` or `FAILED`, with the exit code and
+the tail of the failing run. Full output per day is in `logs/publish-<date>.log`,
+pruned after 30 days. A failed run also raises a desktop notification, because a
+job that quietly stops publishing is worse than one that breaks loudly.
+
+The usual cause is the **`claude` CLI being signed out** — its OAuth session
+expires every so often. The run then sets nothing, publishes nothing, and exits
+non-zero. Fix it by running `claude` once in a terminal to sign in, then either
+wait for tomorrow or run `.\daily.cmd` by hand.
+
+The site itself is the other tell: every page footer carries the build time, so a
+date that stops moving means the job stopped running.
 
 ---
 
