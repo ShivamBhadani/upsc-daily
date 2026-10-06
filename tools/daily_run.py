@@ -17,6 +17,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 LOGS = ROOT / "logs"
 KEEP_DAYS = 30
+TIMEOUT_SECONDS = 45 * 60
 
 
 def notify(title: str, message: str) -> None:
@@ -67,25 +68,33 @@ def main(argv: list[str]) -> int:
     with log_path.open("a", encoding="utf-8") as log:
         log.write(header)
         log.flush()
-        proc = subprocess.run(
-            [sys.executable, str(ROOT / "publish.py"), *argv],
-            cwd=str(ROOT), stdout=log, stderr=subprocess.STDOUT, text=True,
-        )
+        try:
+            proc = subprocess.run(
+                [sys.executable, str(ROOT / "publish.py"), *argv],
+                cwd=str(ROOT), stdout=log, stderr=subprocess.STDOUT, text=True,
+                # Comfortably inside Task Scheduler's one-hour limit, so a hung
+                # run is still reported by this script rather than killed silently.
+                timeout=TIMEOUT_SECONDS,
+            )
+            code = proc.returncode
+        except subprocess.TimeoutExpired:
+            log.write(f"\n[daily_run] gave up after {TIMEOUT_SECONDS // 60} minutes\n")
+            code = 124
 
     took = (datetime.now() - started).total_seconds()
-    status = "OK" if proc.returncode == 0 else "FAILED"
+    status = "OK" if code == 0 else "FAILED"
     summary = (f"{status}  {started.isoformat(timespec='seconds')}  "
-               f"exit={proc.returncode}  {took:.0f}s  log={log_path.name}\n")
+               f"exit={code}  {took:.0f}s  log={log_path.name}\n")
     (LOGS / "last-status.txt").write_text(summary, encoding="utf-8")
 
     # Repeat the tail of a failed run into the status file: whoever looks is
     # looking because something broke, and the reason should be right there.
-    if proc.returncode != 0:
+    if code != 0:
         tail = log_path.read_text(encoding="utf-8", errors="replace").splitlines()[-15:]
         with (LOGS / "last-status.txt").open("a", encoding="utf-8") as f:
             f.write("\n".join(tail) + "\n")
 
-    if proc.returncode != 0:
+    if code != 0:
         notify("UPSC Daily: no paper published",
                "The morning run failed. See logs/last-status.txt — the usual cause "
                "is the claude CLI being signed out.")
@@ -94,7 +103,7 @@ def main(argv: list[str]) -> int:
     # Under pythonw (how the scheduled task runs it) there is no stdout at all.
     if sys.stdout is not None:
         print(summary.strip())
-    return proc.returncode
+    return code
 
 
 if __name__ == "__main__":

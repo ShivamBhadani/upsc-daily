@@ -19,6 +19,7 @@ from datetime import date, datetime
 from pathlib import Path
 
 from . import export, pyq
+from .config import DB_PATH
 from .models import Article, MainsQuestion, Question
 from .storage import Store
 
@@ -142,6 +143,17 @@ def build(store: Store, out_dir: Path, days: list[str] | None = None,
 
     days = days or store.question_dates()
     days = sorted({d for d in days}, reverse=True)
+
+    # The database is the only copy of the questions. If it comes back empty while
+    # papers are already published, something is wrong with the database, not with
+    # the archive — refuse rather than delete years of papers and push the deletion.
+    published = {f.stem for f in data_dir.glob("*.json")} - {"index", "style"}
+    if not days and published:
+        raise RuntimeError(
+            f"the database holds no questions but {len(published)} papers are already "
+            f"published in {data_dir}; refusing to rebuild and wipe them. Check that "
+            f"the right database is being read (DB_PATH={DB_PATH})."
+        )
     stamp = stamp or datetime.now().strftime("%Y-%m-%d %H:%M")
 
     index_days = []

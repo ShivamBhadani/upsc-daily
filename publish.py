@@ -68,7 +68,7 @@ def generate(settings: Settings, store: Store, day: str, allow_offline: bool = F
         return 0
     say(f"setting questions from {len(articles)} articles…")
     try:
-        questions, mains, backend = Generator(settings).generate(articles, step)
+        questions, mains, backend = Generator(settings).generate(articles, step, for_date=day)
     except GenerationError as exc:
         say(f"generation failed: {exc}")
         return 0
@@ -127,7 +127,10 @@ def push(out: Path, message: str, branch: str | None = None) -> None:
     current = git("rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
     target = branch or current
     say(f"pushing {target} to origin…")
-    git("push", "origin", f"{current}:{target}")
+    # credential.interactive=never: without it, an expired GitHub token makes the
+    # credential manager pop a sign-in window and the unattended run hangs on it
+    # until the scheduler kills the task, reporting nothing.
+    git("-c", "credential.interactive=never", "push", "origin", f"{current}:{target}")
     say("pushed — the live site updates in a minute or two")
 
 

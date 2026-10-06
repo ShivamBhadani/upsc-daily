@@ -174,7 +174,8 @@ def _extract_json(text: str) -> dict:
     raise GenerationError("unterminated JSON object from model")
 
 
-def _to_questions(payload: dict, articles: list[Article], origin: str) -> tuple[list[Question], list[MainsQuestion]]:
+def _to_questions(payload: dict, articles: list[Article], origin: str,
+                  for_date: str | None = None) -> tuple[list[Question], list[MainsQuestion]]:
     by_title = {a.title.lower(): a for a in articles}
 
     def match(title: str) -> Article | None:
@@ -188,7 +189,8 @@ def _to_questions(payload: dict, articles: list[Article], origin: str) -> tuple[
                 return v
         return None
 
-    today = date.today().isoformat()
+    # The day being set, which is not always today: a past paper can be redone.
+    today = for_date or date.today().isoformat()
     questions: list[Question] = []
     for raw in payload.get("questions", []):
         opts = [str(o) for o in raw.get("options", [])]
@@ -356,10 +358,11 @@ def _falsify(sentence: str, pool: list[str], rng: random.Random) -> str:
 
 
 def generate_offline(articles: list[Article], n_prelims: int, n_mains: int,
-                     progress: Progress | None = None) -> tuple[list[Question], list[MainsQuestion]]:
+                     progress: Progress | None = None, for_date: str | None = None
+                     ) -> tuple[list[Question], list[MainsQuestion]]:
     """Build questions by mutating article sentences. Draft quality by design."""
     rng = random.Random(date.today().toordinal())
-    today = date.today().isoformat()
+    today = for_date or date.today().isoformat()
 
     usable = [a for a in articles if len(a.text()) > 300]
     rng.shuffle(usable)
@@ -494,8 +497,10 @@ class Generator:
             return [want]
         return self.available_backends()
 
-    def generate(self, articles: list[Article], progress: Progress | None = None
+    def generate(self, articles: list[Article], progress: Progress | None = None,
+                 for_date: str | None = None
                  ) -> tuple[list[Question], list[MainsQuestion], str]:
+        for_date = for_date or date.today().isoformat()
         n_p = max(self.settings.prelims_count, 20)
         n_m = self.settings.mains_count
         errors: list[str] = []
@@ -505,7 +510,7 @@ class Generator:
                 if backend == "offline":
                     if progress:
                         progress("Building questions offline from article text", 10)
-                    qs, ms = generate_offline(articles, n_p, n_m, progress)
+                    qs, ms = generate_offline(articles, n_p, n_m, progress, for_date)
                     return qs, ms, "offline"
 
                 caller = call_api if backend == "api" else call_cli
@@ -521,7 +526,7 @@ class Generator:
                             int((bi - 1) / len(batches) * 95) + 5,
                         )
                     text = caller(build_prompt(chunk, want_p, want_m), self.settings)
-                    qs, ms = _to_questions(_extract_json(text), chunk, backend)
+                    qs, ms = _to_questions(_extract_json(text), chunk, backend, for_date)
                     all_q.extend(qs)
                     all_m.extend(ms)
                 if len(all_q) < 5:
