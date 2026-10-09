@@ -8,10 +8,22 @@
     <CalendarTrigger>
       <StartBoundary>2026-10-07T07:00:00</StartBoundary>
       <Enabled>true</Enabled>
+      <!-- A laptop is often in standby at 07:00, or has no network yet. Keep
+           trying through the day; once the paper exists the run exits at once. -->
+      <Repetition>
+        <Interval>PT2H</Interval>
+        <Duration>PT14H</Duration>
+        <StopAtDurationEnd>false</StopAtDurationEnd>
+      </Repetition>
       <ScheduleByDay>
         <DaysInterval>1</DaysInterval>
       </ScheduleByDay>
     </CalendarTrigger>
+    <LogonTrigger>
+      <Enabled>true</Enabled>
+      <UserId>DESKTOP-UU8FH7L\shivam</UserId>
+      <Delay>PT5M</Delay>
+    </LogonTrigger>
   </Triggers>
   <Principals>
     <Principal id="Author">
@@ -48,7 +60,7 @@
   <Actions Context="Author">
     <Exec>
       <Command>C:\Users\shivam\AppData\Local\Microsoft\WindowsApps\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\pythonw.exe</Command>
-      <Arguments>tools\daily_run.py</Arguments>
+      <Arguments>tools\daily_run.py --skip-if-done</Arguments>
       <WorkingDirectory>C:\Users\shivam\OneDrive - MOSARTSemiconductors Pvt. Ltd\Documents\claude\upsc-daily</WorkingDirectory>
     </Exec>
   </Actions>

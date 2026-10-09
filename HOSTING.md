@@ -103,9 +103,15 @@ What the task is set to do:
 | Start when available | If the laptop was off at 07:00, it runs as soon as it is on again |
 | Run only if network available | No point fetching feeds without one |
 | Battery restrictions off | A laptop is usually unplugged in the morning |
+| Retries every 2 hours for 14 hours | A laptop is often in standby at 07:00, or has no network yet |
+| Also runs 5 minutes after you sign in | Catches a day that was missed entirely |
 | Restart on failure, 3 × 20 min | Rides out a flaky connection |
 | One hour time limit | A full run takes about 7 minutes |
 | Only while signed in | The `claude` CLI and the git credential both live in your user session |
+
+The repeated attempts are free: the task passes `--skip-if-done`, so once the day
+has its paper every later attempt exits in under a second without fetching a feed
+or calling the model.
 
 Run it by hand any time:
 

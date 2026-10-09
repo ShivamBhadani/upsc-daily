@@ -152,6 +152,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--prelims", type=int, help="number of Prelims questions (minimum 20)")
     ap.add_argument("--allow-offline", action="store_true",
                     help="publish template drafts when no model backend is reachable")
+    ap.add_argument("--skip-if-done", action="store_true",
+                    help="exit at once if this day already has a paper (for repeated "
+                         "scheduled attempts)")
     args = ap.parse_args(argv)
 
     settings = Settings.load()
@@ -161,6 +164,15 @@ def main(argv: list[str] | None = None) -> int:
         settings.prelims_count = max(args.prelims, 20)
     store = Store()
     day = args.date
+
+    # A scheduled run may be attempted several times a day so that a missed
+    # morning heals itself. Once the day has its paper, the later attempts
+    # should cost nothing at all — no feeds fetched, no model called.
+    if args.skip_if_done and not args.regenerate:
+        done = store.questions_for(day)
+        if done:
+            say(f"{day} already has {len(done)} questions; nothing to do")
+            return 0
 
     if args.rebuild_only:
         build(args.out)
