@@ -1,9 +1,25 @@
 {
  "title": "UPSC Daily",
  "tagline": "Current affairs, set as Prelims questions — every day",
- "generatedAt": "2026-10-16 10:40",
- "latest": "2026-10-16",
+ "generatedAt": "2026-10-17 10:16",
+ "latest": "2026-10-17",
  "days": [
+  {
+   "date": "2026-10-17",
+   "prelims": 20,
+   "mains": 5,
+   "articles": 42,
+   "subjects": {
+    "Economy": 5,
+    "Polity & Governance": 4,
+    "International Relations": 3,
+    "Geography": 1,
+    "Science & Technology": 3,
+    "Social Issues & Schemes": 2,
+    "Environment & Ecology": 1,
+    "History, Art & Culture": 1
+   }
+  },
   {
    "date": "2026-10-16",
    "prelims": 20,
@@ -176,19 +192,19 @@
   }
  ],
  "totals": {
-  "days": 11,
-  "prelims": 220,
-  "mains": 54,
-  "articles": 739
+  "days": 12,
+  "prelims": 240,
+  "mains": 59,
+  "articles": 781
  },
  "subjectTotals": {
-  "Economy": 65,
-  "Polity & Governance": 37,
-  "International Relations": 18,
-  "Science & Technology": 34,
-  "Environment & Ecology": 23,
-  "History, Art & Culture": 15,
-  "Geography": 23,
-  "Social Issues & Schemes": 5
+  "Economy": 70,
+  "Polity & Governance": 41,
+  "International Relations": 21,
+  "Geography": 24,
+  "Science & Technology": 37,
+  "Social Issues & Schemes": 7,
+  "Environment & Ecology": 24,
+  "History, Art & Culture": 16
  }
 }
