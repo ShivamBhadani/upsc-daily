@@ -48,6 +48,21 @@ def notify(title: str, message: str) -> None:
         pass
 
 
+def first_failure_today(today: str) -> bool:
+    """True the first time a day fails, False for that day's later attempts."""
+    marker = LOGS / "last-alert.txt"
+    try:
+        if marker.read_text(encoding="utf-8").strip() == today:
+            return False
+    except OSError:
+        pass
+    try:
+        marker.write_text(today, encoding="utf-8")
+    except OSError:
+        pass
+    return True
+
+
 def prune_old_logs() -> None:
     cutoff = date.today() - timedelta(days=KEEP_DAYS)
     for old in LOGS.glob("publish-*.log"):
@@ -94,10 +109,12 @@ def main(argv: list[str]) -> int:
         with (LOGS / "last-status.txt").open("a", encoding="utf-8") as f:
             f.write("\n".join(tail) + "\n")
 
-    if code != 0:
+    if code != 0 and first_failure_today(started.date().isoformat()):
+        # The task retries every two hours, so alerting on each attempt would mean
+        # seven identical balloons in a day. Say it once.
         notify("UPSC Daily: no paper published",
-               "The morning run failed. See logs/last-status.txt — the usual cause "
-               "is the claude CLI being signed out.")
+               "Today's run failed and will keep retrying. See logs/last-status.txt "
+               "— the usual cause is the claude CLI being signed out.")
 
     prune_old_logs()
     # Under pythonw (how the scheduled task runs it) there is no stdout at all.

@@ -187,7 +187,7 @@ def build(store: Store, out_dir: Path, days: list[str] | None = None,
     for d in index_days:
         subject_totals.update(d["subjects"])
 
-    (data_dir / "index.json").write_text(json.dumps({
+    index_payload = {
         "title": SITE_TITLE,
         "tagline": SITE_TAGLINE,
         "generatedAt": stamp,
@@ -195,7 +195,24 @@ def build(store: Store, out_dir: Path, days: list[str] | None = None,
         "days": index_days,
         "totals": totals,
         "subjectTotals": dict(subject_totals),
-    }, ensure_ascii=False, indent=1), encoding="utf-8")
+    }
+
+    # Readers judge freshness by the build stamp, and git judges whether there is
+    # anything to commit by the file. If the stamp moved on every rebuild, a site
+    # whose newest paper is days old would still claim to have been built minutes
+    # ago, and every rebuild would produce a commit containing only that lie.
+    index_file = data_dir / "index.json"
+    if index_file.exists():
+        try:
+            previous = json.loads(index_file.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            previous = None
+        if previous and {k: v for k, v in previous.items() if k != "generatedAt"} == \
+                {k: v for k, v in index_payload.items() if k != "generatedAt"}:
+            index_payload["generatedAt"] = previous.get("generatedAt", stamp)
+
+    index_file.write_text(json.dumps(index_payload, ensure_ascii=False, indent=1),
+                          encoding="utf-8")
 
     (data_dir / "style.json").write_text(
         json.dumps(style_payload(), ensure_ascii=False, indent=1), encoding="utf-8")

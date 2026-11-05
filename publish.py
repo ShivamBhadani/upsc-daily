@@ -194,7 +194,12 @@ def main(argv: list[str] | None = None) -> int:
         failed = True
 
     build(args.out)
-    if not args.no_push:
+    if failed:
+        # Pushing here would commit a build that contains no new paper, so the
+        # repository fills with empty commits while the site stays stale — the
+        # failure ends up looking like a run of successful days.
+        say("not pushing: this run produced no paper")
+    elif not args.no_push:
         n = len(store.questions_for(day))
         push(args.out, f"Paper for {day} ({n} Prelims questions)", args.branch)
 
